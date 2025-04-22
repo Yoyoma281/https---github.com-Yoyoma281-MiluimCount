@@ -5,7 +5,20 @@ const serverless = require('serverless-http');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+  'https://https-github-com-yoyoma281-m-git-d6da55-shais-projects-f6bbc652.vercel.app/',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 
 // MongoDB connection
 const mongoURI = process.env.MONGODB_URI;
