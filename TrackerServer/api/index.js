@@ -5,12 +5,21 @@ const serverless = require("serverless-http");
 
 const app = express();
 
-// Middleware
-app.use(express.json());
+// Enable CORS for all origins
 app.use(cors({ origin: "*" }));
 
+// Optional: manually set CORS headers as a fallback
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+
+app.use(express.json());
+
 // MongoDB connection
-const mongoURI = process.env.MONGODB_URI;
+const mongoURI = process.env.MONGODB_URI || "your_fallback_mongo_uri_here";
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("MongoDB connected"))
@@ -22,23 +31,20 @@ const userSchema = new mongoose.Schema({
   coffeeCount: { type: Number, default: 0 },
   cigCount: { type: Number, default: 0 },
 });
-const User = mongoose.model("User", userSchema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 
-// Router
+// Routes
 const router = express.Router();
 
-// Login or register
 router.post("/login", async (req, res) => {
   const { username } = req.body;
 
   try {
     let user = await User.findOne({ username });
-
     if (!user) {
       user = new User({ username });
       await user.save();
     }
-
     res.json(user);
   } catch (err) {
     console.error("Login error:", err);
@@ -46,7 +52,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Update counters
 router.post("/update", async (req, res) => {
   const { username, coffeeCount, cigCount } = req.body;
 
@@ -56,7 +61,6 @@ router.post("/update", async (req, res) => {
       { coffeeCount, cigCount },
       { new: true }
     );
-
     if (user) {
       res.json(user);
     } else {
@@ -68,15 +72,12 @@ router.post("/update", async (req, res) => {
   }
 });
 
-// Get user ranks
 router.get("/ranks", async (req, res) => {
   try {
     const users = await User.find().lean();
-
     const sortedUsers = users.sort(
       (a, b) => b.coffeeCount + b.cigCount - (a.coffeeCount + a.cigCount)
     );
-
     res.json(sortedUsers);
   } catch (err) {
     console.error("Ranks error:", err);
@@ -84,9 +85,9 @@ router.get("/ranks", async (req, res) => {
   }
 });
 
-// Mount all routes on /api
+// Mount routes
 app.use("/api", router);
 
-// Export the handler for Vercel
+// Export for Vercel
 module.exports = app;
 module.exports.handler = serverless(app);
