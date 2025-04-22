@@ -1,18 +1,18 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const serverless = require('serverless-http');
 
 const app = express();
-const port = 3001;
-
-// Middleware
 app.use(express.json());
 app.use(cors());
 
 // MongoDB connection
-const mongoURI = 'mongodb+srv://shai239:Shai7261@cluster0.tvsdydl.mongodb.net/usertracker?retryWrites=true&w=majority';
-mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
+const mongoURI = process.env.MONGODB_URI;
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 // User schema
@@ -22,12 +22,11 @@ const userSchema = new mongoose.Schema({
   cigCount: { type: Number, default: 0 },
 });
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 // Routes
 
-// Login or register
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username } = req.body;
 
   try {
@@ -45,8 +44,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Update counters
-app.post('/update', async (req, res) => {
+app.post('/api/update', async (req, res) => {
   const { username, coffeeCount, cigCount } = req.body;
 
   try {
@@ -67,8 +65,7 @@ app.post('/update', async (req, res) => {
   }
 });
 
-// Get user ranks
-app.get('/ranks', async (req, res) => {
+app.get('/api/ranks', async (req, res) => {
   try {
     const users = await User.find().lean();
 
@@ -83,8 +80,4 @@ app.get('/ranks', async (req, res) => {
   }
 });
 
-
-// Start server
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+module.exports = serverless(app);

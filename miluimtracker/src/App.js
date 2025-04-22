@@ -9,7 +9,7 @@ export default function App() {
   const [ranking, setRanking] = useState([]);
   const [error, setError] = useState('');
 
-  const serverUrl = 'http://192.168.1.119:3001';
+  const serverUrl = 'https://tracke-server.vercel.app';
 
   const loginUser = async (name) => {
     try {
