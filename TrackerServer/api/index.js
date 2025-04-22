@@ -6,7 +6,7 @@ const serverless = require('serverless-http');
 const app = express();
 app.use(express.json());
 const allowedOrigins = [
-  'https://https-github-com-yoyoma281-m-git-d6da55-shais-projects-f6bbc652.vercel.app/',
+  'https://https-github-com-yoyoma281-m-git-d6da55-shais-projects-f6bbc652.vercel.app',
   'http://localhost:3000'
 ];
 
