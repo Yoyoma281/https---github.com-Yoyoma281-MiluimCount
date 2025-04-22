@@ -1,32 +1,19 @@
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const serverless = require('serverless-http');
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
 
 const app = express();
-app.use(express.json());
-const allowedOrigins = [
-  'https://https-github-com-yoyoma281-m-git-d6da55-shais-projects-f6bbc652.vercel.app',
-  'http://localhost:3000'
-];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  }
-}));
+// Middleware
+app.use(express.json());
+app.use(cors({ origin: "*" }));
 
 // MongoDB connection
 const mongoURI = process.env.MONGODB_URI;
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+mongoose
+  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // User schema
 const userSchema = new mongoose.Schema({
@@ -35,11 +22,12 @@ const userSchema = new mongoose.Schema({
   cigCount: { type: Number, default: 0 },
 });
 
-const User = mongoose.models.User || mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 // Routes
 
-app.post('/api/login', async (req, res) => {
+// Login or register
+app.post("/login", async (req, res) => {
   const { username } = req.body;
 
   try {
@@ -52,12 +40,13 @@ app.post('/api/login', async (req, res) => {
 
     res.json(user);
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-app.post('/api/update', async (req, res) => {
+// Update counters
+app.post("/update", async (req, res) => {
   const { username, coffeeCount, cigCount } = req.body;
 
   try {
@@ -70,27 +59,29 @@ app.post('/api/update', async (req, res) => {
     if (user) {
       res.json(user);
     } else {
-      res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: "User not found" });
     }
   } catch (err) {
-    console.error('Update error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-app.get('/api/ranks', async (req, res) => {
+// Get user ranks
+app.get("/ranks", async (req, res) => {
   try {
     const users = await User.find().lean();
 
-    const sortedUsers = users.sort((a, b) =>
-      (b.coffeeCount + b.cigCount) - (a.coffeeCount + a.cigCount)
+    const sortedUsers = users.sort(
+      (a, b) => b.coffeeCount + b.cigCount - (a.coffeeCount + a.cigCount)
     );
 
     res.json(sortedUsers);
   } catch (err) {
-    console.error('Ranks error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Ranks error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-module.exports = serverless(app);
+// Export the serverless function handler
+module.exports = app;
