@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const serverless = require("serverless-http");
 
 const app = express();
 
@@ -21,13 +22,13 @@ const userSchema = new mongoose.Schema({
   coffeeCount: { type: Number, default: 0 },
   cigCount: { type: Number, default: 0 },
 });
-
 const User = mongoose.model("User", userSchema);
 
-// Routes
+// Router
+const router = express.Router();
 
 // Login or register
-app.post("/login", async (req, res) => {
+router.post("/login", async (req, res) => {
   const { username } = req.body;
 
   try {
@@ -46,7 +47,7 @@ app.post("/login", async (req, res) => {
 });
 
 // Update counters
-app.post("/update", async (req, res) => {
+router.post("/update", async (req, res) => {
   const { username, coffeeCount, cigCount } = req.body;
 
   try {
@@ -68,7 +69,7 @@ app.post("/update", async (req, res) => {
 });
 
 // Get user ranks
-app.get("/ranks", async (req, res) => {
+router.get("/ranks", async (req, res) => {
   try {
     const users = await User.find().lean();
 
@@ -83,5 +84,9 @@ app.get("/ranks", async (req, res) => {
   }
 });
 
-// Export the serverless function handler
+// Mount all routes on /api
+app.use("/api", router);
+
+// Export the handler for Vercel
 module.exports = app;
+module.exports.handler = serverless(app);
