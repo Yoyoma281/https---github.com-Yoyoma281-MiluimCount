@@ -1,14 +1,14 @@
 {
-    "name": "coffee-cigarette-app",
-    "version": "1.0.0",
-    "main": "index.js",
-    "dependencies": {
-      "express": "^4.17.1",
-      "mongoose": "^5.10.9",
-      "cors": "^2.8.5"
-    },
-    "scripts": {
-      "start": "node api/index.js"
-    }
+  "name": "coffee-cigarette-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.17.1",
+    "mongoose": "^5.10.9",
+    "cors": "^2.8.5",
+    "serverless-http": "^3.0.0"
+  },
+  "scripts": {
+    "start": "node api/index.js"
   }
-  
+}
