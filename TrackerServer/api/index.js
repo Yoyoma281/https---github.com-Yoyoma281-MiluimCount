@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const serverless = require("serverless-http");
+require("dotenv").config();
 
 const app = express();
 
@@ -19,11 +20,20 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // MongoDB connection
-const mongoURI = process.env.MONGODB_URI || "your_fallback_mongo_uri_here";
+const mongoURI = "mongodb+srv://shai239:Shai7261@cluster0.tvsdydl.mongodb.net/";
+
+if (!mongoURI) {
+  console.error("❌ MONGODB_URI not set in .env file");
+  process.exit(1); // Exit to avoid undefined connection
+}
+
 mongoose
   .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
 
 // User schema
 const userSchema = new mongoose.Schema({
@@ -38,7 +48,6 @@ const router = express.Router();
 
 router.post("/login", async (req, res) => {
   const { username } = req.body;
-
   try {
     let user = await User.findOne({ username });
     if (!user) {
@@ -54,7 +63,6 @@ router.post("/login", async (req, res) => {
 
 router.post("/update", async (req, res) => {
   const { username, coffeeCount, cigCount } = req.body;
-
   try {
     const user = await User.findOneAndUpdate(
       { username },
@@ -85,7 +93,6 @@ router.get("/ranks", async (req, res) => {
   }
 });
 
-// Mount routes
 app.use("/api", router);
 
 // Export for Vercel
