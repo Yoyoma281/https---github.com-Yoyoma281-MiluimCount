@@ -1,83 +1,100 @@
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 const serverless = require("serverless-http");
-const fs = require("fs");
-const path = require("path");
 require("dotenv").config();
 
 const app = express();
-const DATA_FILE = path.join(__dirname, "data.json");
 
+// Enable CORS for all origins
 app.use(cors({ origin: "*" }));
 
+// Optional: manually set CORS headers as a fallback
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  next(); 
+  next();
 });
 
 app.use(express.json());
 
-// Helper functions for reading/writing JSON file
-function readData() {
-  if (!fs.existsSync(DATA_FILE)) return [];
-  const data = fs.readFileSync(DATA_FILE);
-  return JSON.parse(data);
+// MongoDB connection
+const mongoURI = 'mongodb+srv://shai239:Shai7261@cluster0.tvsdydl.mongodb.net/usertracker';
+
+if (!mongoURI) {
+  console.error("❌ MONGODB_URI not set in .env file");
+  process.exit(1); // Exit to avoid undefined connection
 }
 
-function writeData(users) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
-}
+mongoose
+  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
+    process.exit(1);
+  });
+
+// User schema
+const userSchema = new mongoose.Schema({
+  username: { type: String, unique: true },
+  coffeeCount: { type: Number, default: 0 },
+  cigCount: { type: Number, default: 0 },
+});
+const User = mongoose.models.User || mongoose.model("User", userSchema);
 
 // Routes
 const router = express.Router();
 
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { username } = req.body;
-  let users = readData();
-  let user = users.find((u) => u.username === username);
-
-  if (!user) {
-    user = { username, coffeeCount: 0, cigCount: 0 };
-    users.push(user);
-    writeData(users);
+  try {
+    let user = await User.findOne({ username });
+    if (!user) {
+      user = new User({ username });
+      await user.save();
+    }
+    res.json(user);
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  res.json(user);
 });
 
-router.post("/update", (req, res) => {
+router.post("/update", async (req, res) => {
   const { username, coffeeCount, cigCount } = req.body;
-  let users = readData();
-  let user = users.find((u) => u.username === username);
-
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
+  try {
+    const user = await User.findOneAndUpdate(
+      { username },
+      { coffeeCount, cigCount },
+      { new: true }
+    );
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ error: "Server error" });
   }
-
-  user.coffeeCount = coffeeCount;
-  user.cigCount = cigCount;
-  writeData(users);
-
-  res.json(user);
 });
 
-router.get("/ranks", (req, res) => {
-  let users = readData();
-  users.sort((a, b) => b.coffeeCount + b.cigCount - (a.coffeeCount + a.cigCount));
-  res.json(users);
+router.get("/ranks", async (req, res) => {
+  try {
+    const users = await User.find().lean();
+    const sortedUsers = users.sort(
+      (a, b) => b.coffeeCount + b.cigCount - (a.coffeeCount + a.cigCount)
+    );
+    res.json(sortedUsers);
+  } catch (err) {
+    console.error("Ranks error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 app.use("/api", router);
 
+// Export for Vercel
 module.exports = app;
 module.exports.handler = serverless(app);
-
-// Run locally
-if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Local JSON server running at http://localhost:${PORT}`);
-  });
-}

@@ -10,7 +10,8 @@ export default function App() {
   const [error, setError] = useState('');
 
   const serverUrl = 'https://tracke-server.vercel.app/api';
-  
+  // const serverUrl = 'http://localhost:3000/api'; // Change this to your server URL
+
   const loginUser = async (name) => {
     try {
       const response = await axios.post(`${serverUrl}/login`, { username: name });
