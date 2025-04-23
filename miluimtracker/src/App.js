@@ -10,13 +10,14 @@ export default function App() {
   const [error, setError] = useState('');
 
   const serverUrl = 'https://tracke-server.vercel.app/api';
-
+  
   const loginUser = async (name) => {
     try {
       const response = await axios.post(`${serverUrl}/login`, { username: name });
       setUsername(response.data.username);
       setCoffeeCount(response.data.coffeeCount);
       setCigCount(response.data.cigCount);
+      localStorage.setItem('username', name); // Save username to localStorage
       fetchRanking();
     } catch (error) {
       setError('Error logging in');
@@ -46,6 +47,14 @@ export default function App() {
       setError('Error fetching rankings');
     }
   };
+
+  // Load username from localStorage on mount
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('username');
+    if (savedUsername) {
+      loginUser(savedUsername);
+    }
+  }, []);
 
   useEffect(() => {
     if (username) {
